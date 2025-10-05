@@ -9,8 +9,9 @@ import '../../mesh/providers/mesh_provider.dart';
 import '../models/radar_device.dart';
 import 'compact_radar_painter.dart';
 import '../screens/emergency_chat_screen.dart';
+import '../../maps/widgets/hazard_map.dart';
 
-/// Emergency mode UI - black background, radar visualization, minimal UI
+/// Emergency mode UI - black background, radar/map visualization, minimal UI
 class EmergencyModeWidget extends StatefulWidget {
   const EmergencyModeWidget({super.key});
 
@@ -22,6 +23,9 @@ class _EmergencyModeWidgetState extends State<EmergencyModeWidget> {
   double _userBearing = 0.0; // 0 = North (up)
   StreamSubscription<MagnetometerEvent>? _magnetometerSubscription;
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+
+  // View mode toggle
+  bool _showMap = false; // false = radar, true = map
 
   // Smoothing values - exponential smoothing instead of moving average
   double _smoothedBearing = 0.0;
@@ -135,59 +139,96 @@ class _EmergencyModeWidgetState extends State<EmergencyModeWidget> {
     return Scaffold(
       backgroundColor: AppColors.emergencyBackground,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              _buildHeader(context),
-              const Spacer(flex: 2),
-              _buildPulsingCircle(context),
-              const SizedBox(height: 16),
-              _buildStatus(context),
-              const Spacer(flex: 2),
-              _buildActionButtons(context),
-              const SizedBox(height: 8),
-            ],
-          ),
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: _showMap ? _buildMapView(context) : _buildRadarView(context),
+            ),
+            _buildActionButtons(context),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Column(
-      children: [
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.emergency,
-              color: AppColors.sosRed,
-              size: 24,
-            ),
-            SizedBox(width: 12),
-            Text(
-              'EMERGENCY MODE',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.emergencyText,
-                letterSpacing: 2,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        // Debug: show current bearing
-        Text(
-          'Heading: ${_userBearing.toInt()}°',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF00FF88),
-            fontWeight: FontWeight.w500,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.bgTertiary.withOpacity(0.3),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.divider.withOpacity(0.3),
+            width: 1,
           ),
         ),
-      ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left: Emergency mode title
+          const Row(
+            children: [
+              Icon(
+                Icons.emergency,
+                color: AppColors.sosRed,
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'EMERGENCY',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.emergencyText,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          // Right: Radar/Map toggle
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _showMap = !_showMap;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.accentBlue.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.accentBlue.withOpacity(0.5),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _showMap ? Icons.radar : Icons.map,
+                    color: AppColors.accentBlue,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _showMap ? 'RADAR' : 'MAP',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.accentBlue,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -364,6 +405,36 @@ class _EmergencyModeWidgetState extends State<EmergencyModeWidget> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRadarView(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          const Spacer(flex: 2),
+          _buildPulsingCircle(context),
+          const SizedBox(height: 16),
+          _buildStatus(context),
+          const Spacer(flex: 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapView(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.divider.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: const HazardMap(),
     );
   }
 

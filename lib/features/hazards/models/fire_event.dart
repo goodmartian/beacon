@@ -62,6 +62,20 @@ class FireEvent {
     return _calculateDistance(latitude, longitude, userLat, userLon);
   }
 
+  /// Formatted acquisition time for display
+  String get formattedAcqTime {
+    final now = DateTime.now();
+    final diff = now.difference(acquisitionTime);
+
+    if (diff.inHours < 1) {
+      return '${diff.inMinutes}m ago';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}h ago';
+    } else {
+      return '${diff.inDays}d ago';
+    }
+  }
+
   /// Haversine formula for distance calculation
   static double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const R = 6371.0; // Earth radius in kilometers

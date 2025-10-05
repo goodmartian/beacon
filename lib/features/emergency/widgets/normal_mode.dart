@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/colors.dart';
 import '../providers/emergency_provider.dart';
 import '../../mesh/providers/mesh_provider.dart';
+import '../../hazards/providers/nasa_provider.dart';
 import '../../mesh/screens/mesh_debug_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 
-/// Normal mode UI - shows map, device count, and SOS button
+/// Normal mode UI - shows hazard info and SOS button
 class NormalModeWidget extends StatefulWidget {
   const NormalModeWidget({super.key});
 
@@ -42,10 +43,8 @@ class _NormalModeWidgetState extends State<NormalModeWidget>
           children: [
             _buildStatusBar(context),
             Expanded(
-              child: _buildMapPlaceholder(context),
+              child: _buildMainContent(context),
             ),
-            _buildSOSButton(context),
-            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -134,42 +133,149 @@ class _NormalModeWidgetState extends State<NormalModeWidget>
     );
   }
 
-  Widget _buildMapPlaceholder(BuildContext context) {
+  Widget _buildMainContent(BuildContext context) {
+    return Consumer2<NasaProvider, MeshProvider>(
+      builder: (context, nasaProvider, meshProvider, child) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 20),
+
+              // Beacon logo/title
+              Image.asset(
+                'assets/logo.png',
+                width: 120,
+                height: 120,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Beacon',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Text(
+                'Find. Survive. Together.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+
+              const SizedBox(height: 48),
+
+              // Stats cards
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.devices,
+                      label: 'Nearby',
+                      value: '${meshProvider.discoveredDevices.length}',
+                      color: AppColors.meshSignalStrong,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.local_fire_department,
+                      label: 'Fires',
+                      value: '${nasaProvider.fires.length}',
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 48),
+
+              // SOS Button
+              _buildSOSButton(context),
+
+              const SizedBox(height: 32),
+
+              // Status info
+              if (nasaProvider.isInDangerZone)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.error.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning,
+                        color: AppColors.error,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'You are near an active fire zone. Stay alert.',
+                          style: TextStyle(
+                            color: AppColors.error,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     return Container(
-      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.bgTertiary,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider, width: 1),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.map,
-              size: 64,
-              color: AppColors.accentBlue.withOpacity(0.6),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Map Integration',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'NASA hazard data will appear here',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textPrimary.withOpacity(0.7),
-              ),
-            ),
-          ],
+        border: Border.all(
+          color: AppColors.divider,
+          width: 1,
         ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

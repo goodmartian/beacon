@@ -22,7 +22,7 @@ class NasaProvider extends ChangeNotifier {
   Timer? _updateTimer;
 
   // Settings
-  bool _useMockData = true; // Use mock data by default
+  bool _useMockData = false; // Use real NASA data when API key available
   bool _autoUpdate = true;
   int _updateIntervalMinutes = 30;
   double _searchRadiusKm = 50;
@@ -94,9 +94,9 @@ class NasaProvider extends ChangeNotifier {
 
   NasaProvider({
     String? apiKey,
-    bool useMockData = true,
-  })  : _useMockData = useMockData,
-        _realService = useMockData || apiKey == null
+    bool? useMockData,
+  })  : _useMockData = useMockData ?? (apiKey == null || apiKey.isEmpty),
+        _realService = (useMockData ?? (apiKey == null || apiKey.isEmpty)) || apiKey == null
             ? null
             : NasaFirmsService(mapKey: apiKey);
 
